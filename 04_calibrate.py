@@ -29,11 +29,11 @@ def calibrate_all_motors(config, portHandler, packetHandler):
     
     # 限界位置2を記録  
     print("【ステップ2】各関節を逆方向の限界まで曲げてください")
-    positions2 = wait_for_all_positions_input(motor_list, portHandler, packetHandler, "【ステップ2】各関節を逆方向の限界まで曲げてください")
+    positions2 = wait_for_all_positions_input(motor_list, portHandler, packetHandler, "【ステップ2】各関節を逆方向の限界まで曲げてください", positions1)
     
     # 中間位置を記録
     print("【ステップ3】各関節を作業しやすい中間位置にしてください")
-    middle_positions = wait_for_all_positions_input(motor_list, portHandler, packetHandler, "【ステップ3】各関節を作業しやすい中間位置にしてください")
+    middle_positions = wait_for_all_positions_input(motor_list, portHandler, packetHandler, "【ステップ3】各関節を作業しやすい中間位置にしてください", positions1, positions2)
     
     # 各モーターの結果を計算
     for motor_name, motor_data in motor_list:
@@ -43,18 +43,31 @@ def calibrate_all_motors(config, portHandler, packetHandler):
         
         range_min = min(pos1, pos2)
         range_max = max(pos1, pos2)
-        middle_calculated = (range_min + range_max) // 2
+        
+        # 単純な中間値
+        simple_middle = (range_min + range_max) // 2
+        
+        # オーバーフロー中間値（4096を跨ぐ場合）
+        overflow_middle = (range_max + (range_min + 4096)) // 2
+        if overflow_middle >= 4096:
+            overflow_middle -= 4096
+        
+        # 実際の中間位置により近い方を採用
+        diff_simple = abs(middle_actual - simple_middle)
+        diff_overflow = abs(middle_actual - overflow_middle)
+        
+        calculated_middle = overflow_middle if diff_overflow < diff_simple else simple_middle
         
         calibration_results[motor_name] = {
             "id": motor_data['id'],
             "range_min": range_min,
             "range_max": range_max,
-            "middle": middle_calculated
+            "middle": calculated_middle
         }
     
     return calibration_results
 
-def wait_for_all_positions_input(motor_list, portHandler, packetHandler, instruction=""):
+def wait_for_all_positions_input(motor_list, portHandler, packetHandler, instruction="", pos1=None, pos2=None):
     """全モーターの位置をリアルタイム表示しながらENTER待ち"""
     import threading
     
@@ -68,11 +81,25 @@ def wait_for_all_positions_input(motor_list, portHandler, packetHandler, instruc
             if instruction:
                 print(instruction)
                 print()
+            
+            # 確定済みの値を表示
+            if pos1:
+                print("限界位置1:")
+                for motor_name, _ in motor_list:
+                    print(f"  {motor_name:12}: {pos1[motor_name]:4d}")
+                print()
+            
+            if pos2:
+                print("限界位置2:")
+                for motor_name, _ in motor_list:
+                    print(f"  {motor_name:12}: {pos2[motor_name]:4d}")
+                print()
+            
             print("現在位置:")
             for motor_name, motor_data in motor_list:
                 pos = get_current_position(portHandler, packetHandler, motor_data['id'])
                 current_positions[motor_name] = pos
-                print(f"{motor_name:12}: {pos:4d}")
+                print(f"  {motor_name:12}: {pos:4d}")
             print("\nENTERで確定")
             time.sleep(0.05)
     
