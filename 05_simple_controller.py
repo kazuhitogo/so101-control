@@ -33,6 +33,11 @@ class SimpleRobotGUI:
             motor_id = self.config['follower']['calibration'][motor_name]['id']
             self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, 33, 0)  # Position mode
             
+            # PID制御パラメータ設定
+            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, 21, 16)  # P_Coefficient
+            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, 22, 0)   # I_Coefficient  
+            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, 23, 32)  # D_Coefficient
+            
             # 現在のトルク状態を取得
             torque_status, _, _ = self.packetHandler.read1ByteTxRx(self.portHandler, motor_id, ADDR_TORQUE_ENABLE)
             self.motor_torque_enabled[motor_name] = bool(torque_status)
@@ -185,45 +190,8 @@ class SimpleRobotGUI:
         # トルクが有効な場合のみモーターに送信
         if self.motor_torque_enabled.get(motor_name, False):
             motor_id = self.config['follower']['calibration'][motor_name]['id']
-            
-            # wrist_rollの場合は最短経路を計算
-            if motor_name == 'wrist_roll':
-                current_pos, _, _ = self.packetHandler.read2ByteTxRx(self.portHandler, motor_id, ADDR_PRESENT_POSITION)
-                target_pos = self.calculate_shortest_path(current_pos, position)
-                print(f"wrist_roll: current={current_pos}, slider={position}, target={target_pos}")
-                self.packetHandler.write2ByteTxRx(self.portHandler, motor_id, ADDR_GOAL_POSITION, target_pos)
-            else:
-                self.packetHandler.write2ByteTxRx(self.portHandler, motor_id, ADDR_GOAL_POSITION, position)
+            self.packetHandler.write2ByteTxRx(self.portHandler, motor_id, ADDR_GOAL_POSITION, position)
             print(f"Motor command sent: {position}")  # デバッグ用
-    
-    def calculate_shortest_path(self, current_pos, target_pos):
-        """連続回転関節の最短経路を計算"""
-        # 直接の距離
-        direct_distance = abs(target_pos - current_pos)
-        
-        # オーバーフロー経由の距離
-        if target_pos > current_pos:
-            overflow_distance = (current_pos + (4096 - target_pos))
-        else:
-            overflow_distance = (target_pos + (4096 - current_pos))
-        
-        # 最短経路を選択
-        if direct_distance <= overflow_distance:
-            return target_pos  # 直接経路
-        else:
-            # オーバーフロー経由の場合、段階的に移動
-            if target_pos > current_pos:
-                # 0を経由して移動
-                if current_pos > 2048:
-                    return 0  # まず0に移動
-                else:
-                    return target_pos
-            else:
-                # 4095を経由して移動
-                if current_pos < 2048:
-                    return 4095  # まず4095に移動
-                else:
-                    return target_pos
     
     def update_loop(self):
         """位置更新"""
