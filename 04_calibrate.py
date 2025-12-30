@@ -32,8 +32,9 @@ def calibrate_all_motors(config, portHandler, packetHandler):
     positions2 = wait_for_all_positions_input(motor_list, portHandler, packetHandler, "【ステップ2】各関節を逆方向の限界まで曲げてください", positions1)
     
     # 中間位置を記録
-    print("【ステップ3】各関節を作業しやすい中間位置にしてください")
-    middle_positions = wait_for_all_positions_input(motor_list, portHandler, packetHandler, "【ステップ3】各関節を作業しやすい中間位置にしてください", positions1, positions2)
+    print("【ステップ3】各関節を物理的な中間位置（最も自然な位置）にしてください")
+    print("この位置が論理的な中間位置(2048)として設定されます")
+    middle_positions = wait_for_all_positions_input(motor_list, portHandler, packetHandler, "【ステップ3】各関節を物理的な中間位置にしてください", positions1, positions2)
     
     # 各モーターの結果を計算
     for motor_name, motor_data in motor_list:
@@ -43,6 +44,24 @@ def calibrate_all_motors(config, portHandler, packetHandler):
         
         range_min = min(pos1, pos2)
         range_max = max(pos1, pos2)
+        
+        # ホーミングオフセット計算（LeRobot方式）
+        # 実際の中間位置を2048にするためのオフセット
+        homing_offset = middle_actual - 2048
+        
+        # ホーミングオフセットをモーターに書き込み
+        print(f"{motor_name}: ホーミングオフセット {homing_offset} を設定中...")
+        packetHandler.write2ByteTxRx(portHandler, motor_data['id'], 20, homing_offset)  # Homing_Offset address = 20
+        time.sleep(0.1)
+        
+        # 設定後の位置確認
+        new_position, _, _ = packetHandler.read2ByteTxRx(portHandler, motor_data['id'], ADDR_PRESENT_POSITION)
+        print(f"  設定後の位置: {new_position} (目標: 2048)")
+        
+        # 論理的な範囲を計算（ホーミングオフセット適用後）
+        logical_min = range_min - homing_offset
+        logical_max = range_max - homing_offset
+        logical_middle = 2048  # 常に2048が中間
         
         # 単純な中間値
         simple_middle = (range_min + range_max) // 2
@@ -60,10 +79,30 @@ def calibrate_all_motors(config, portHandler, packetHandler):
         
         calibration_results[motor_name] = {
             "id": motor_data['id'],
-            "range_min": range_min,
-            "range_max": range_max,
-            "middle": calculated_middle
+            "range_min": logical_min,
+            "range_max": logical_max,
+            "middle": logical_middle,  # 常に2048
+            "homing_offset": homing_offset,
+            "physical_middle": middle_actual,
+            "physical_min": range_min,
+            "physical_max": range_max
         }
+    
+    # ホーミングオフセットは既に適用済み
+    print("\n=== ホーミングオフセット適用済み ===")
+    for motor_name, result in calibration_results.items():
+        print(f"{motor_name}: オフセット = {result['homing_offset']} (適用済み)")
+    
+    print("\n現在の論理位置:")
+    for motor_name, result in calibration_results.items():
+        motor_id = result['id']
+        current_pos, _, _ = packetHandler.read2ByteTxRx(portHandler, motor_id, ADDR_PRESENT_POSITION)
+        print(f"{motor_name}: {current_pos} (目標: 2048)")
+        
+        print("ホーミングオフセット適用完了")
+        print("注意: モーターの電源を一度切って入れ直してください")
+    else:
+        print("ホーミングオフセットはスキップしました")
     
     return calibration_results
 
