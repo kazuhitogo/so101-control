@@ -42,39 +42,18 @@ def main():
     
     print(f"{port} に接続しました")
     
-    # 4. キャリブレーションの存在確認 (SO101Follower.calibrate()相当)
-    existing_calibration = config.get('follower', {}).get('calibration', {})
-    
-    if existing_calibration:
-        user_input = input(
-            f"ENTERを押すとID {robot_id} に関連付けられた既存のキャリブレーションファイルを使用します。"
-            f"'c'を入力してENTERを押すとキャリブレーションを実行します: "
-        )
-        if user_input.strip().lower() != "c":
-            print(f"ID {robot_id} に関連付けられたキャリブレーションファイルをモーターに書き込み中")
-            # 既存のキャリブレーションをモーターに書き込み
-            for motor_name, motor_id in SO101_MOTORS.items():
-                if motor_name in existing_calibration:
-                    cal = existing_calibration[motor_name]
-                    packet_handler.write2ByteTxRx(port_handler, motor_id, 31, cal['homing_offset'])  # Homing_Offset
-                    packet_handler.write2ByteTxRx(port_handler, motor_id, 6, cal['range_min'])       # Min_Position_Limit
-                    packet_handler.write2ByteTxRx(port_handler, motor_id, 8, cal['range_max'])       # Max_Position_Limit
-            print("キャリブレーションをモーターに書き込みました")
-            port_handler.closePort()
-            return
-    
     print(f"\nSO101 フォロワーのキャリブレーションを実行中")
     
-    # 5. トルクを無効化 (self.bus.disable_torque()相当)
+    # 4. トルクを無効化 (self.bus.disable_torque()相当)
     for motor_name, motor_id in SO101_MOTORS.items():
         packet_handler.write1ByteTxRx(port_handler, motor_id, ADDR_TORQUE_ENABLE, 0)  # Torque_Enable = 0
         packet_handler.write1ByteTxRx(port_handler, motor_id, 55, 0)                  # Lock = 0
     
-    # 6. 動作モードをポジションに設定 (OperatingMode.POSITION.value相当)
+    # 5. 動作モードをポジションに設定 (OperatingMode.POSITION.value相当)
     for motor_name, motor_id in SO101_MOTORS.items():
         packet_handler.write1ByteTxRx(port_handler, motor_id, 33, 0)  # Operating_Mode = 0 (POSITION)
     
-    # 7. 各モーターを個別にキャリブレーション (ID順: 中央値→min→max→次のモーター)
+    # 6. 各モーターを個別にキャリブレーション (ID順: 中央値→min→max→次のモーター)
     homing_offsets = {}
     range_mins = {}
     range_maxes = {}
@@ -174,7 +153,7 @@ def main():
     
     print("\n=== 全モーターのキャリブレーション完了 ===")
     
-    # 8. キャリブレーションを保存 (self._save_calibration()相当)
+    # 7. キャリブレーションを保存 (self._save_calibration()相当)
     print("\nキャリブレーション結果:")
     
     # 新しいキャリブレーションデータで設定を更新
@@ -196,13 +175,13 @@ def main():
         packet_handler.write2ByteTxRx(port_handler, motor_id, 6, range_mins[motor_name])   # Min_Position_Limit
         packet_handler.write2ByteTxRx(port_handler, motor_id, 8, range_maxes[motor_name])  # Max_Position_Limit
     
-    # 9. .env.yamlに保存
+    # 8. .env.yamlに保存
     save_config(config)
     calibration_file = f"~/.cache/huggingface/lerobot/calibration/robots/so101_follower/{robot_id}.json"
     print(f"キャリブレーションを .env.yaml に保存しました")
     print(f"(LeRobot相当: {calibration_file})")
     
-    # 10. 切断
+    # 9. 切断
     port_handler.closePort()
     print("切断しました")
 
