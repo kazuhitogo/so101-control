@@ -1,189 +1,92 @@
-#!/usr/bin/env python3
-
-import time
 import yaml
-import select
-import sys
 import scservo_sdk as scs
 from servo_constants import *
+from time import sleep
+import select
+import sys
 
-def load_config():
-    """設定を.env.yamlから読み込み"""
-    with open('.env.yaml', 'r') as f:
-        config = yaml.safe_load(f)
-    return config
+with open('.env.yaml', 'r') as f:
+    config = yaml.safe_load(f)
 
-def save_config(config):
-    """設定を.env.yamlに保存"""
-    with open('.env.yaml', 'w') as f:
-        yaml.dump(config, f, default_flow_style=False, indent=2)
+port_handler = scs.PortHandler(config['follower']['port'])
+packet_handler = scs.PacketHandler(PROTOCOL_VERSION)
+
+def port_reconnect():
+    sleep(0.1)
+    port_handler.closePort()
+    port_handler.openPort()
+    port_handler.setBaudRate(BAUDRATE)
+    return None
+
 
 def main():
-    print("SO101 フォロワーアーム キャリブレーション")
-    print("=" * 40)
+    port_handler.openPort()
+    port_handler.setBaudRate(BAUDRATE)
+
     
-    # 1. .env.yamlから設定を読み込み
-    config = load_config()
-    port = config['follower']['port']
-    robot_id = "my_first_follower_arm"  # .env.yaml構造から
-    
-    # 2. FeetechMotorsBus相当の初期化
-    port_handler = scs.PortHandler(port)
-    packet_handler = scs.PacketHandler(PROTOCOL_VERSION)
-    
-    # 3. ポートに接続
-    if not port_handler.openPort():
-        print(f"ポート {port} のオープンに失敗しました")
-        return
-    
-    if not port_handler.setBaudRate(BAUDRATE):
-        print(f"ボーレート {BAUDRATE} の設定に失敗しました")
-        return
-    
-    print(f"{port} に接続しました")
-    
-    print(f"\nSO101 フォロワーのキャリブレーションを実行中")
-    
-    # 4. トルクを無効化 (self.bus.disable_torque()相当)
     for motor_name, motor_id in SO101_MOTORS.items():
-        packet_handler.write1ByteTxRx(port_handler, motor_id, ADDR_TORQUE_ENABLE, 0)  # Torque_Enable = 0
-        packet_handler.write1ByteTxRx(port_handler, motor_id, 55, 0)                  # Lock = 0
+        # トルクの無効化
+        packet_handler.write1ByteTxRx(port_handler, motor_id, ADDR_TORQUE_ENABLE, 0)
+        # EPROM 書き込みロック解除
+        packet_handler.write1ByteTxRx(port_handler, motor_id, ADDR_LOCK, 0)
+
+
+    motor_id = config['follower']['calibration']['shoulder_pan']['id']
     
-    # 5. 動作モードをポジションに設定 (OperatingMode.POSITION.value相当)
-    for motor_name, motor_id in SO101_MOTORS.items():
-        packet_handler.write1ByteTxRx(port_handler, motor_id, 33, 0)  # Operating_Mode = 0 (POSITION)
-    
-    # 6. 各モーターを個別にキャリブレーション (ID順: 中央値→min→max→次のモーター)
-    homing_offsets = {}
-    range_mins = {}
-    range_maxes = {}
-    
-    for motor_name, motor_id in sorted(SO101_MOTORS.items(), key=lambda x: x[1]):  # ID順でソート
-        print(f"\n=== {motor_name} (ID: {motor_id}) キャリブレーション開始 ===")
+    try:
+        # オフセットを 0 で初期化
+        packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, 0)
+        port_reconnect()
+        now_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
+        print(f"現在のオフセット: 0, 現在の位置: {now_pos}")
+        # オフセットを + 10する
+        packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, 10)
+        port_reconnect()
+        plus_10_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
+        print(f"plus 10 のオフセット: 10, plus 10 の位置: {plus_10_pos}")
+
+        # 差が 4000 を超えていたらオーバーフロー
+        if abs(now_pos - plus_10_pos) > 4000:
+            now_pos = now_pos + 4096 if now_pos < plus_10_pos else now_pos
+            plus_10_pos = plus_10_pos + 4096 if now_pos > plus_10_pos else plus_10_pos
         
-        # ステップ1: 中央位置設定（ホーミングオフセット）
-        print(f"\n--- ステップ1: {motor_name} 中央位置設定 ---")
+        if now_pos > plus_10_pos: # オフセットを増やせば位置座標が減る場合
+            optimized_offset = now_pos - 2047
+        else: # オフセットを増やせば位置座標が増える場合
+            optimized_offset = 2047 - now_pos
+        optimized_offset = optimized_offset if optimized_offset >= 0 else optimized_offset + 4096
+        
+        packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, optimized_offset)
+        port_reconnect()
+
+        optimized_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
+        print(f"最適化されたオフセット: {optimized_offset}, 最適化された位置: {optimized_pos}")
+        sleep(1)
+        min_pos = 4095
+        max_pos = 0
         while True:
-            present_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-            
-            # 画面をクリアして現在のモーター位置を表示
-            print("\033[2J\033[H", end="")  # 画面クリア
-            print(f"SO101 フォロワー キャリブレーション - {motor_name} (ID: {motor_id})")
-            print("=" * 50)
-            print("ステップ1: 中央位置設定")
-            print(f"現在位置: {present_pos}")
-            print(f"\n{motor_name} を可動範囲の中央に移動してENTERを押してください...")
-            
-            # ユーザー入力をチェック (ノンブロッキング)
+            pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
+            min_pos = min_pos if pos > min_pos else pos
+            max_pos = max_pos if pos < max_pos else pos
+            print("\033[2J\033[H", end="") 
+            print( f"オフセット: {optimized_offset}")
+            print( f"現在値: {pos}")
+            print( f"最小値: {min_pos}")
+            print( f"最大値: {max_pos}")
             if select.select([sys.stdin], [], [], 0.1)[0]:
                 input()  # 入力を消費
                 break
-            
-            time.sleep(0.1)
+
         
-        # ホーミングオフセットを計算・設定
-        present_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-        homing_offset = present_pos - 2047
-        homing_offsets[motor_name] = homing_offset
-        packet_handler.write2ByteTxRx(port_handler, motor_id, 31, homing_offset)  # Homing_Offset
-        print(f"{motor_name}: ホーミングオフセット = {homing_offset} 設定完了")
+
         
-        # ステップ2: 最小値探索
-        print(f"\n--- ステップ2: {motor_name} 最小値探索 ---")
-        present_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-        range_mins[motor_name] = present_pos
-        
-        while True:
-            present_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-            range_mins[motor_name] = min(range_mins[motor_name], present_pos)
-            
-            # 画面をクリアして最小値探索状況を表示
-            print("\033[2J\033[H", end="")  # 画面クリア
-            print(f"SO101 フォロワー キャリブレーション - {motor_name} (ID: {motor_id})")
-            print("=" * 50)
-            print("ステップ2: 最小値探索")
-            print(f"現在位置: {present_pos}")
-            print(f"記録最小値: {range_mins[motor_name]}")
-            print(f"\n{motor_name} を最小位置まで動かし、完了したらENTERを押してください...")
-            
-            # ユーザー入力をチェック (ノンブロッキング)
-            if select.select([sys.stdin], [], [], 0.1)[0]:
-                input()  # 入力を消費
-                break
-            
-            time.sleep(0.1)
-        
-        print(f"{motor_name}: 最小値 = {range_mins[motor_name]} 記録完了")
-        
-        # ステップ3: 最大値探索
-        print(f"\n--- ステップ3: {motor_name} 最大値探索 ---")
-        present_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-        range_maxes[motor_name] = present_pos
-        
-        while True:
-            present_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-            range_maxes[motor_name] = max(range_maxes[motor_name], present_pos)
-            
-            # 画面をクリアして最大値探索状況を表示
-            print("\033[2J\033[H", end="")  # 画面クリア
-            print(f"SO101 フォロワー キャリブレーション - {motor_name} (ID: {motor_id})")
-            print("=" * 50)
-            print("ステップ3: 最大値探索")
-            print(f"現在位置: {present_pos}")
-            print(f"記録最大値: {range_maxes[motor_name]}")
-            print(f"\n{motor_name} を最大位置まで動かし、完了したらENTERを押してください...")
-            
-            # ユーザー入力をチェック (ノンブロッキング)
-            if select.select([sys.stdin], [], [], 0.1)[0]:
-                input()  # 入力を消費
-                break
-            
-            time.sleep(0.1)
-        
-        print(f"{motor_name}: 最大値 = {range_maxes[motor_name]} 記録完了")
-        
-        # このモーターのキャリブレーション完了
-        range_size = range_maxes[motor_name] - range_mins[motor_name]
-        print(f"\n{motor_name} キャリブレーション完了:")
-        print(f"  ホーミングオフセット: {homing_offsets[motor_name]}")
-        print(f"  可動範囲: {range_mins[motor_name]} ～ {range_maxes[motor_name]} (幅: {range_size})")
-        
-        if motor_name != "gripper":  # 最後のモーター以外
-            input(f"\nENTERを押して次のモーター ({list(SO101_MOTORS.keys())[list(SO101_MOTORS.values()).index(motor_id)+1]}) に進んでください...")
-    
-    print("\n=== 全モーターのキャリブレーション完了 ===")
-    
-    # 7. キャリブレーションを保存 (self._save_calibration()相当)
-    print("\nキャリブレーション結果:")
-    
-    # 新しいキャリブレーションデータで設定を更新
-    if 'follower' not in config:
-        config['follower'] = {}
-    if 'calibration' not in config['follower']:
-        config['follower']['calibration'] = {}
-    
-    for motor_name, motor_id in SO101_MOTORS.items():
-        config['follower']['calibration'][motor_name] = {
-            'id': motor_id,
-            'homing_offset': homing_offsets[motor_name],
-            'range_min': range_mins[motor_name],
-            'range_max': range_maxes[motor_name]
-        }
-        print(f"{motor_name}: オフセット={homing_offsets[motor_name]}, 最小={range_mins[motor_name]}, 最大={range_maxes[motor_name]}")
-        
-        # モーターに制限値を書き込み (self.bus.write_calibration()相当)
-        packet_handler.write2ByteTxRx(port_handler, motor_id, 6, range_mins[motor_name])   # Min_Position_Limit
-        packet_handler.write2ByteTxRx(port_handler, motor_id, 8, range_maxes[motor_name])  # Max_Position_Limit
-    
-    # 8. .env.yamlに保存
-    save_config(config)
-    calibration_file = f"~/.cache/huggingface/lerobot/calibration/robots/so101_follower/{robot_id}.json"
-    print(f"キャリブレーションを .env.yaml に保存しました")
-    print(f"(LeRobot相当: {calibration_file})")
-    
-    # 9. 切断
-    port_handler.closePort()
-    print("切断しました")
+
+
+
+    except Exception as e:
+        print(f"エラー: {e}")
+    finally:
+        port_handler.closePort()        
 
 if __name__ == "__main__":
     main()
