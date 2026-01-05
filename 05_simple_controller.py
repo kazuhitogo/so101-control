@@ -8,8 +8,11 @@ import threading
 import time
 import signal
 import sys
-from scservo_sdk import *
-from servo_constants import *
+from scservo_sdk import PortHandler, PacketHandler
+from servo_constants import (
+    PROTOCOL_VERSION, BAUDRATE,
+    ADDR_TORQUE_ENABLE, ADDR_PRESENT_POSITION, ADDR_GOAL_POSITION
+)
 
 class SimpleRobotGUI:
     def __init__(self):
@@ -217,7 +220,7 @@ class SimpleRobotGUI:
                     self.all_torque_status_label.config(text="(All Safe Mode)", foreground='green')
                 
                 time.sleep(0.1)
-            except:
+            except Exception:
                 break
     
     def check_signals(self):
@@ -247,13 +250,6 @@ class SimpleRobotGUI:
             self.portHandler.closePort()
         except Exception as e:
             print(f"Error stopping motors: {e}")
-    
-    def signal_handler(self, signum, frame):
-        """Ctrl+C時の処理"""
-        print("\nCtrl+C detected. Stopping...")
-        self.running = False
-        self.stop_motors()
-        sys.exit(0)
     
     def on_closing(self):
         """終了時の処理"""

@@ -1,6 +1,8 @@
 import yaml
-from scservo_sdk import *
-from servo_constants import *
+from scservo_sdk import PortHandler, PacketHandler
+from servo_constants import (
+    PROTOCOL_VERSION, BAUDRATE, ADDR_ID, COMM_SUCCESS
+)
 
 
 def identify_motors(port):

@@ -1,6 +1,9 @@
 import yaml
 import scservo_sdk as scs
-from servo_constants import *
+from servo_constants import (
+    PROTOCOL_VERSION, BAUDRATE, SO101_MOTORS,
+    ADDR_TORQUE_ENABLE, ADDR_LOCK, ADDR_HOMING_OFFSET, ADDR_PRESENT_POSITION
+)
 from time import sleep
 import select
 import sys

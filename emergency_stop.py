@@ -2,8 +2,11 @@
 # 緊急停止スクリプト
 
 import yaml
-from scservo_sdk import *
-from servo_constants import *
+from scservo_sdk import PortHandler, PacketHandler
+from servo_constants import (
+    PROTOCOL_VERSION, BAUDRATE,
+    ADDR_PRESENT_POSITION, ADDR_GOAL_POSITION, ADDR_TORQUE_ENABLE
+)
 
 with open('.env.yaml', 'r') as f:
     config = yaml.safe_load(f)

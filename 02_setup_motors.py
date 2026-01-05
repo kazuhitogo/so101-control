@@ -1,6 +1,9 @@
 import yaml
-from scservo_sdk import *
-from servo_constants import *
+from scservo_sdk import PortHandler, PacketHandler
+from servo_constants import (
+    PROTOCOL_VERSION, BAUDRATE, SO101_MOTORS, 
+    ADDR_ID, COMM_SUCCESS
+)
 
 
 def setup_motors(port):

@@ -3,8 +3,11 @@
 
 import yaml
 import time
-from scservo_sdk import *
-from servo_constants import *
+from scservo_sdk import PortHandler, PacketHandler
+from servo_constants import (
+    PROTOCOL_VERSION, BAUDRATE,
+    ADDR_TORQUE_ENABLE, ADDR_PRESENT_POSITION, ADDR_GOAL_POSITION
+)
 
 def main():
     # 設定ファイル読み込み
