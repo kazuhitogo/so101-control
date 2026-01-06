@@ -4,6 +4,7 @@
 PROTOCOL_VERSION = 0  # Protocol end: 0 for STS/SMS servos
 
 # Servo register addresses
+# https://tech-blog.abeja.asia/entry/so101-motor-control-202508
 ADDR_ID = 5
 ADDR_TORQUE_ENABLE = 40
 ADDR_GOAL_POSITION = 42

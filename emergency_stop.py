@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# 緊急停止スクリプト
-
 import yaml
 from scservo_sdk import PortHandler, PacketHandler
 from servo_constants import (

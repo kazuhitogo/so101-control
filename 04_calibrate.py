@@ -33,58 +33,70 @@ def main():
         # EPROM 書き込みロック解除
         packet_handler.write1ByteTxRx(port_handler, motor_id, ADDR_LOCK, 0)
 
-
-    motor_id = config['follower']['calibration']['shoulder_pan']['id']
-    
     try:
-        # オフセットを 0 で初期化
-        packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, 0)
-        port_reconnect()
-        now_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-        print(f"現在のオフセット: 0, 現在の位置: {now_pos}")
-        # オフセットを + 10する
-        packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, 10)
-        port_reconnect()
-        plus_10_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-        print(f"plus 10 のオフセット: 10, plus 10 の位置: {plus_10_pos}")
+        for motor_name in SO101_MOTORS.keys():
+            motor_id = config['follower']['calibration'][motor_name]['id']
+            print(f"\n=== {motor_name} (ID: {motor_id}) のキャリブレーション ===")
+            print(f"{motor_name} を中間位置にセットしたら Enter を押してください")
+            while input() != "":
+                print("Enterキーを押してください")
+                continue
+            # オフセットを 0 で初期化
+            packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, 0)
+            port_reconnect()
+            now_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
+            # オフセットを + 10する
+            packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, 10)
+            port_reconnect()
+            plus_10_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
 
-        # 差が 4000 を超えていたらオーバーフロー
-        if abs(now_pos - plus_10_pos) > 4000:
-            now_pos = now_pos + 4096 if now_pos < plus_10_pos else now_pos
-            plus_10_pos = plus_10_pos + 4096 if now_pos > plus_10_pos else plus_10_pos
+            # 差が 4000 を超えていたらオーバーフロー
+            if abs(now_pos - plus_10_pos) > 4000:
+                if now_pos > plus_10_pos:
+                    now_pos -= 4096
+                else:
+                    plus_10_pos -= 4096
+            
+            if now_pos > plus_10_pos: # オフセットを増やせば位置座標が減る場合
+                optimized_offset = now_pos - 2047
+            else: # オフセットを増やせば位置座標が増える場合
+                optimized_offset = 2047 - now_pos
+            optimized_offset = optimized_offset if optimized_offset <= 2047 else optimized_offset - 4095
+            print(now_pos, plus_10_pos,optimized_offset)
+            packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, optimized_offset)
+            port_reconnect()
+
+            optimized_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
+            min_pos = 4095
+            max_pos = 0
+            while True:
+                pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
+                min_pos = min_pos if pos > min_pos else pos
+                max_pos = max_pos if pos < max_pos else pos
+                print("\033[2J\033[H", end="") 
+                print(f"=== {motor_name} を限界まで動かして最小と最大値を定義します ===")
+                print( f"オフセット: {optimized_offset}")
+                print( f"現在値: {pos}")
+                print( f"最小値: {min_pos}")
+                print( f"最大値: {max_pos}")
+                print("Enterキーで次のモーターへ")
+                if select.select([sys.stdin], [], [], 0.1)[0]:
+                    user_input = input()
+                    if user_input == "":
+                        break
+            
+            # 結果をconfigに保存（まだファイルには書き込まない）
+            config['follower']['calibration'][motor_name]['homing_offset'] = optimized_offset
+            config['follower']['calibration'][motor_name]['range_min'] = min_pos
+            config['follower']['calibration'][motor_name]['range_max'] = max_pos
+            
+            print(f"{motor_name} のキャリブレーション完了")
         
-        if now_pos > plus_10_pos: # オフセットを増やせば位置座標が減る場合
-            optimized_offset = now_pos - 2047
-        else: # オフセットを増やせば位置座標が増える場合
-            optimized_offset = 2047 - now_pos
-        optimized_offset = optimized_offset if optimized_offset >= 0 else optimized_offset + 4096
+        # 全モーターのキャリブレーション完了後に.env.yamlに一括保存
+        with open('.env.yaml', 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
         
-        packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, optimized_offset)
-        port_reconnect()
-
-        optimized_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-        print(f"最適化されたオフセット: {optimized_offset}, 最適化された位置: {optimized_pos}")
-        sleep(1)
-        min_pos = 4095
-        max_pos = 0
-        while True:
-            pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-            min_pos = min_pos if pos > min_pos else pos
-            max_pos = max_pos if pos < max_pos else pos
-            print("\033[2J\033[H", end="") 
-            print( f"オフセット: {optimized_offset}")
-            print( f"現在値: {pos}")
-            print( f"最小値: {min_pos}")
-            print( f"最大値: {max_pos}")
-            if select.select([sys.stdin], [], [], 0.1)[0]:
-                input()  # 入力を消費
-                break
-
-        
-
-        
-
-
+        print("\n全モーターのキャリブレーション完了 - .env.yamlに保存しました")
 
     except Exception as e:
         print(f"エラー: {e}")
