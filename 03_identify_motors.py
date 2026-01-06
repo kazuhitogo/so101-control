@@ -6,18 +6,18 @@ from servo_constants import (
 
 
 def identify_motors(port):
-    """Read current motor IDs from EEPROM"""
+    """EEPROM から現在のモーター ID を読み取り"""
 
     portHandler = PortHandler(port)
     packetHandler = PacketHandler(PROTOCOL_VERSION)
 
     if not portHandler.openPort():
-        print(f"Failed to open port {port}")
+        print(f"ポート {port} を開けませんでした")
         return False
 
     portHandler.setBaudRate(BAUDRATE)
 
-    print("Scanning for motors...")
+    print("モーターをスキャン中...")
     found_motors = []
 
     for motor_id in range(1, 10):
@@ -26,13 +26,13 @@ def identify_motors(port):
         )
 
         if dxl_comm_result == COMM_SUCCESS:
-            print(f"Motor found at ID {motor_id}: stored ID = {current_id}")
+            print(f"ID {motor_id} でモーターを発見: 保存された ID = {current_id}")
             found_motors.append(motor_id)
 
     if not found_motors:
-        print("No motors found")
+        print("モーターが見つかりませんでした")
     else:
-        print(f"Total motors found: {len(found_motors)}")
+        print(f"発見されたモーター数: {len(found_motors)}")
 
     portHandler.closePort()
     return True
@@ -43,21 +43,21 @@ def main():
         with open(".env.yaml", "r") as f:
             config = yaml.safe_load(f)
 
-        print("=== FOLLOWER ARM ===")
+        print("=== フォロワーアーム ===")
         follower_port = config["follower"]["port"]
-        print(f"Port: {follower_port}")
+        print(f"ポート: {follower_port}")
         identify_motors(follower_port)
 
-        print("\n=== LEADER ARM ===")
+        print("\n=== リーダーアーム ===")
         leader_port = config["leader"]["port"]
-        print(f"Port: {leader_port}")
+        print(f"ポート: {leader_port}")
         identify_motors(leader_port)
 
     except FileNotFoundError:
-        print(".env.yaml not found")
+        print(".env.yaml が見つかりません")
         return
     except KeyError:
-        print("Invalid config format in .env.yaml")
+        print(".env.yaml の設定形式が無効です")
         return
 
 

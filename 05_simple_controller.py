@@ -182,19 +182,19 @@ class SimpleRobotGUI:
     def on_slider_change(self, motor_name, value):
         """スライダー変更時の処理"""
         position = int(float(value))
-        print(f"Slider changed: {motor_name} = {position}")  # デバッグ用
+        print(f"スライダー変更: {motor_name} = {position}")  # デバッグ用
         
         # 目標値表示を常に更新（キーが存在する場合のみ）
         if motor_name in self.goal_labels:
             self.goal_labels[motor_name].config(text=f"{position:4d}")
         else:
-            print(f"Warning: goal_labels['{motor_name}'] not found")  # デバッグ用
+            print(f"警告: goal_labels['{motor_name}'] が見つかりません")  # デバッグ用
         
         # トルクが有効な場合のみモーターに送信
         if self.motor_torque_enabled.get(motor_name, False):
             motor_id = self.config['follower']['calibration'][motor_name]['id']
             self.packetHandler.write2ByteTxRx(self.portHandler, motor_id, ADDR_GOAL_POSITION, position)
-            print(f"Motor command sent: {position}")  # デバッグ用
+            print(f"モーターコマンド送信: {position}")  # デバッグ用
     
     def update_loop(self):
         """位置更新"""
@@ -230,7 +230,7 @@ class SimpleRobotGUI:
     
     def signal_handler(self, signum, frame):
         """Ctrl+C時の処理"""
-        print("\nCtrl+C detected. Stopping...")
+        print("\nCtrl+C が検出されました。停止中...")
         self.running = False
         self.stop_motors()
         self.root.quit()  # mainloopを終了
@@ -249,7 +249,7 @@ class SimpleRobotGUI:
                 self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, ADDR_TORQUE_ENABLE, 0)
             self.portHandler.closePort()
         except Exception as e:
-            print(f"Error stopping motors: {e}")
+            print(f"モーター停止エラー: {e}")
     
     def on_closing(self):
         """終了時の処理"""
