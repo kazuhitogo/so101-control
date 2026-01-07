@@ -11,7 +11,8 @@ import sys
 from scservo_sdk import PortHandler, PacketHandler
 from servo_constants import (
     PROTOCOL_VERSION, BAUDRATE,
-    ADDR_TORQUE_ENABLE, ADDR_PRESENT_POSITION, ADDR_GOAL_POSITION
+    ADDR_TORQUE_ENABLE, ADDR_PRESENT_POSITION, ADDR_GOAL_POSITION,
+    ADDR_POSITION_P_GAIN, ADDR_POSITION_I_GAIN, ADDR_POSITION_D_GAIN, 
 )
 
 class SimpleRobotGUI:
@@ -37,9 +38,9 @@ class SimpleRobotGUI:
             self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, 33, 0)  # Position mode
             
             # PID制御パラメータ設定
-            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, 21, 16)  # P_Coefficient
-            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, 22, 0)   # I_Coefficient  
-            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, 23, 32)  # D_Coefficient
+            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, ADDR_POSITION_P_GAIN, 16)  # P_Coefficient
+            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, ADDR_POSITION_I_GAIN, 0)   # I_Coefficient  
+            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, ADDR_POSITION_D_GAIN, 32)  # D_Coefficient
             
             # 現在のトルク状態を取得
             torque_status, _, _ = self.packetHandler.read1ByteTxRx(self.portHandler, motor_id, ADDR_TORQUE_ENABLE)
