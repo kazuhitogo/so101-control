@@ -1,9 +1,6 @@
-#!/usr/bin/env python3
+PROTOCOL_VERSION = 0
 
-# Protocol constants
-PROTOCOL_VERSION = 0  # Protocol end: 0 for STS/SMS servos
-
-# Servo register addresses
+# サーボモータのレジスタアドレス定数
 # https://github.com/huggingface/lerobot/blob/main/src/lerobot/motors/feetech/tables.py
 ADDR_ID = 5
 ADDR_HOMING_OFFSET = 31
@@ -16,10 +13,10 @@ ADDR_GOAL_POSITION = 42
 ADDR_LOCK = 55
 ADDR_PRESENT_POSITION = 56
 
-# Communication settings
+# 通信設定
 BAUDRATE = 1000000
 
-# Motor configurations
+# モーター設定
 SO101_MOTORS = {
     "shoulder_pan": 1,
     "shoulder_lift": 2,

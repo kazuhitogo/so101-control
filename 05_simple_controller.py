@@ -47,11 +47,6 @@ class SimpleRobotGUI:
             torque_status, _, _ = self.packetHandler.read1ByteTxRx(self.portHandler, motor_id, ADDR_TORQUE_ENABLE)
             self.motor_torque_enabled[motor_name] = bool(torque_status)
         
-        # グリッパーの初期位置を取得
-        gripper_id = self.config['follower']['calibration']['gripper']['id']
-        self.gripper_base_pos, _, _ = self.packetHandler.read2ByteTxRx(self.portHandler, gripper_id, ADDR_PRESENT_POSITION)
-        self.current_gripper_pos = self.gripper_base_pos
-        
         # GUI作成
         self.create_gui()
         

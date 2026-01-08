@@ -28,9 +28,7 @@ def main():
 
     
     for motor_name, motor_id in SO101_MOTORS.items():
-        # トルクの無効化
         packet_handler.write1ByteTxRx(port_handler, motor_id, ADDR_TORQUE_ENABLE, 0)
-        # EPROM 書き込みロック解除
         packet_handler.write1ByteTxRx(port_handler, motor_id, ADDR_LOCK, 0)
 
     try:
@@ -41,7 +39,6 @@ def main():
             while input() != "":
                 print("Enterキーを押してください")
                 continue
-            # オフセットを 0 で初期化
             packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, 0)
             port_reconnect()
             now_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
@@ -49,7 +46,6 @@ def main():
             packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, optimized_offset)
             port_reconnect()
 
-            optimized_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
             min_pos = 4095
             max_pos = 0
             while True:
@@ -68,14 +64,12 @@ def main():
                     if user_input == "":
                         break
             
-            # 結果をconfigに保存（まだファイルには書き込まない）
             config['follower']['calibration'][motor_name]['homing_offset'] = optimized_offset
             config['follower']['calibration'][motor_name]['range_min'] = min_pos
             config['follower']['calibration'][motor_name]['range_max'] = max_pos
             
             print(f"{motor_name} のキャリブレーション完了")
         
-        # 全モーターのキャリブレーション完了後に.env.yamlに一括保存
         with open('.env.yaml', 'w') as f:
             yaml.dump(config, f, default_flow_style=False)
         
