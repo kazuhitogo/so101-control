@@ -45,24 +45,7 @@ def main():
             packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, 0)
             port_reconnect()
             now_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-            # オフセットを + 10する
-            packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, 10)
-            port_reconnect()
-            plus_10_pos, _, _ = packet_handler.read2ByteTxRx(port_handler, motor_id, ADDR_PRESENT_POSITION)
-
-            # 差が 4000 を超えていたらオーバーフロー
-            if abs(now_pos - plus_10_pos) > 4000:
-                if now_pos > plus_10_pos:
-                    now_pos -= 4096
-                else:
-                    plus_10_pos -= 4096
-            
-            if now_pos > plus_10_pos: # オフセットを増やせば位置座標が減る場合
-                optimized_offset = now_pos - 2047
-            else: # オフセットを増やせば位置座標が増える場合
-                optimized_offset = 2047 - now_pos
-            optimized_offset = optimized_offset if optimized_offset <= 2047 else optimized_offset - 4095
-            print(now_pos, plus_10_pos,optimized_offset)
+            optimized_offset = now_pos - 2047
             packet_handler.write2ByteTxRx(port_handler, motor_id, ADDR_HOMING_OFFSET, optimized_offset)
             port_reconnect()
 
