@@ -4,12 +4,13 @@
 PROTOCOL_VERSION = 0  # Protocol end: 0 for STS/SMS servos
 
 # Servo register addresses
-# https://tech-blog.abeja.asia/entry/so101-motor-control-202508
+# https://github.com/huggingface/lerobot/blob/main/src/lerobot/motors/feetech/tables.py
 ADDR_ID = 5
 ADDR_HOMING_OFFSET = 31
 ADDR_POSITION_P_GAIN = 21
 ADDR_POSITION_D_GAIN = 22
 ADDR_POSITION_I_GAIN = 23
+ADDR_OPERATING_MODE = 33
 ADDR_TORQUE_ENABLE = 40
 ADDR_GOAL_POSITION = 42
 ADDR_LOCK = 55

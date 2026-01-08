@@ -13,6 +13,7 @@ from servo_constants import (
     PROTOCOL_VERSION, BAUDRATE,
     ADDR_TORQUE_ENABLE, ADDR_PRESENT_POSITION, ADDR_GOAL_POSITION,
     ADDR_POSITION_P_GAIN, ADDR_POSITION_I_GAIN, ADDR_POSITION_D_GAIN, 
+    ADDR_OPERATING_MODE,
 )
 
 class SimpleRobotGUI:
@@ -35,7 +36,7 @@ class SimpleRobotGUI:
         
         for motor_name in self.motor_order:
             motor_id = self.config['follower']['calibration'][motor_name]['id']
-            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, 33, 0)  # Position mode
+            self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, ADDR_OPERATING_MODE, 0)  # Position mode
             
             # PID制御パラメータ設定
             self.packetHandler.write1ByteTxRx(self.portHandler, motor_id, ADDR_POSITION_P_GAIN, 16)  # P_Coefficient
