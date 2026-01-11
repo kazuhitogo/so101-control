@@ -1,8 +1,8 @@
 import yaml
-from scservo_sdk import PortHandler, PacketHandler
+from scservo_sdk import PortHandler, PacketHandler, COMM_SUCCESS
 from servo_constants import (
     PROTOCOL_VERSION, BAUDRATE, SO101_MOTORS, 
-    ADDR_ID, COMM_SUCCESS
+    ADDR_ID
 )
 
 
