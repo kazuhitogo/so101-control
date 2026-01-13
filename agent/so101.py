@@ -1,7 +1,9 @@
-# from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP
 import yaml
 import sys
 import os
+import signal
+import atexit
 
 # パッケージのルートディレクトリをパスに追加
 if __name__ == "__main__":
@@ -78,6 +80,23 @@ class So101():
         ]
         self.motors = {}
         self.set_motors()
+        
+        # クリーンアップ処理を登録
+        atexit.register(self.cleanup)
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
+    def _signal_handler(self, signum, frame):
+        self.cleanup()
+        sys.exit(0)
+
+    def cleanup(self):
+        try:
+            for motor in self.motors.values():
+                motor.disable_torque()
+            self.portHandler.closePort()
+        except:
+            pass
 
     def set_motors(self):
         for motor_name in sorted(self.config['follower']['calibration'].keys(),key=lambda motor_name: self.config['follower']['calibration'][motor_name]['id']):
@@ -91,28 +110,31 @@ class So101():
             )
 
     def __del__(self):
-        for motor in self.motors.keys():
-            self.motors[motor].disable_torque()
-        self.portHandler.closePort()
+        self.cleanup()
 
 
 so101 = So101()
 
-# @mcp.tool()
-def set_position(motor_position_dict):
+mcp = FastMCP("SO101")
+
+@mcp.tool()
+def set_motors_position(motor_position_dict):
     """
-    ロボットアームの複数のモーターを同時に指定位置に移動させる
+    ロボットアームのすべてのモーターを同時に指定位置に移動させる
     
     Args:
-        motor_position_dict (dict): モーター名をキー、目標位置を値とする辞書
-                                   例: {
-                                       "shoulder_pan": 2048,
-                                       "shoulder_lift": 2048,
-                                       "elbow_flex": 2048,
-                                       "wrist_flex": 2048,
-                                       "wrist_roll": 2048,
-                                       "gripper": 2048
-                                   }
+        motor_position_dict (dict): モーター名をキー、目標位置を値とする辞書。
+        動かさないモーターは省略可。値は 0-4095 までだがモーターごとに可動範囲の制約があり 0-4095 でも設定できない場合がある。
+        設定できない値の場合はエラーメッセージで設定できる値の範囲を返す。
+        以下はすべてのモーターを動かす例: 
+        {
+            "shoulder_pan": 2048,
+            "shoulder_lift": 2048,
+            "elbow_flex": 2048,
+            "wrist_flex": 2048,
+            "wrist_roll": 2048,
+            "gripper": 2048
+        }
     
     Returns:
         dict or list: 成功時は各モーターの現在位置を含む辞書、
@@ -138,15 +160,31 @@ def set_position(motor_position_dict):
 
     else:
         return errors
+
+@mcp.tool()
+def get_motors_position():
+    """
+    ロボットアームのすべてのモーターの現在位置を取得する
+
+    Args:
+        None
+
+    Returns:
+        dict: モーター名をキー、現在位置を値とする辞書
+              例: {
+                  "shoulder_pan": 2048,
+                  "shoulder_lift": 2048,
+                  "elbow_flex": 2048,
+                  "wrist_flex": 2048,
+                  "wrist_roll": 2048,
+                  "gripper": 2048
+              }
+    """
+    result = {}
+    for motor in so101.motors.keys():
+        result[motor] = so101.motors[motor].get_current_position()
+    return result
     
 if __name__ == "__main__":
-    print(set_position({
-        "shoulder_pan": 2048,
-        "shoulder_lift": 2048,
-        "elbow_flex": 2048,
-        "wrist_flex": 2048,
-        "wrist_roll": 2048,
-        "gripper": 2048
-    }))
-
-
+    mcp.run(transport="stdio")
+    
