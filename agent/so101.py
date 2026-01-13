@@ -95,7 +95,7 @@ class So101():
             for motor in self.motors.values():
                 motor.disable_torque()
             self.portHandler.closePort()
-        except:
+        except Exception:
             pass
 
     def set_motors(self):
