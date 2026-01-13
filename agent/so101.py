@@ -31,20 +31,30 @@ class Motor():
         self.operating_mode = self.set_parameter(ADDR_OPERATING_MODE, 0)
         self.position = self.get_paramter(ADDR_PRESENT_POSITION)
     
-    def set_goal_position(self, position):
+    def validate_goal_position(self, position):
         if self.range_min <= position <= self.range_max:
-            self.packetHandler.write2ByteTxRx(self.portHandler, self.motor_id, ADDR_GOAL_POSITION, position)
-            sleep(1)
-            self.position = self.get_paramter(ADDR_PRESENT_POSITION)
-            return f"{self.motor_name} を {self.position} に動かしました"
+            return True
         else:
-            return f"{self.motor_name} は {self.range_min} から {self.range_max} の値が許されています"
+            return False
+    
+    def set_goal_position(self, position):
+        if self.validate_goal_position(position):
+            self.set_parameter(ADDR_GOAL_POSITION,position)
+            return True
+        else:
+            return False
+    
+    def get_current_position(self):
+        self.position = self.get_paramter(ADDR_PRESENT_POSITION)
+        return self.position
     
     def set_parameter(self, address, parameter):
         self.packetHandler.write2ByteTxRx(self.portHandler, self.motor_id, address, parameter)
         return parameter
+    
     def get_paramter(self, address):
         return self.packetHandler.read2ByteTxRx(self.portHandler, self.motor_id, address)
+    
     def disable_torque(self):
         self.set_parameter(ADDR_TORQUE_ENABLE, 0)
 
@@ -89,10 +99,46 @@ class So101():
 so101 = So101()
 
 # @mcp.tool()
-def set_position(motor_pos_dict):
-    """"""
-    return [so101.motors[motor].set_goal_position(motor_pos_dict[motor]) for motor in motor_pos_dict.keys()]
+def set_position(motor_position_dict):
+    """
+    ロボットアームの複数のモーターを同時に指定位置に移動させる
+    
+    Args:
+        motor_position_dict (dict): モーター名をキー、目標位置を値とする辞書
+                                   例: {
+                                       "shoulder_pan": 2048,
+                                       "shoulder_lift": 2048,
+                                       "elbow_flex": 2048,
+                                       "wrist_flex": 2048,
+                                       "wrist_roll": 2048,
+                                       "gripper": 2048
+                                   }
+    
+    Returns:
+        dict or list: 成功時は各モーターの現在位置を含む辞書、
+                     失敗時は範囲外エラーメッセージのリスト
+    """
+    errors = []
+    enable = True
+    for motor in motor_position_dict.keys():
+        enable *= so101.motors[motor].validate_goal_position(motor_position_dict[motor])
+        if enable:
+            pass
+        else:
+            errors.append(f"{motor} は {so101.motors[motor].range_min} から {so101.motors[motor].range_max} の値以外許されません")
+    
+    if enable:
+        for motor in motor_position_dict.keys():
+            so101.motors[motor].set_goal_position(motor_position_dict[motor])
+        sleep(1)
+        result = {}
+        for motor in motor_position_dict.keys():
+            result[motor] = so101.motors[motor].get_current_position()
+        return result
 
+    else:
+        return errors
+    
 if __name__ == "__main__":
     print(set_position({
         "shoulder_pan": 2048,
