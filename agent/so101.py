@@ -1,3 +1,4 @@
+# from mcp.server.fastmcp import FastMCP
 import yaml
 import sys
 import os
@@ -85,14 +86,21 @@ class So101():
         self.portHandler.closePort()
 
 
-# so101 = So101()
+so101 = So101()
 
-@mcp.tool()
-def set_position(motor_name, position):
-    pass
+# @mcp.tool()
+def set_position(motor_pos_dict):
+    """"""
+    return [so101.motors[motor].set_goal_position(motor_pos_dict[motor]) for motor in motor_pos_dict.keys()]
 
 if __name__ == "__main__":
-    so101 = So101()
-    print(so101.motors["gripper"].set_goal_position(2048))
+    print(set_position({
+        "shoulder_pan": 2048,
+        "shoulder_lift": 2048,
+        "elbow_flex": 2048,
+        "wrist_flex": 2048,
+        "wrist_roll": 2048,
+        "gripper": 2048
+    }))
 
 
