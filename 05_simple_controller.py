@@ -22,7 +22,10 @@ class SimpleRobotGUI:
         with open('.env.yaml', 'r') as f:
             self.config = yaml.safe_load(f)
         
-        self.motor_order = list(self.config['follower']['calibration'].keys())
+        self.motor_order = sorted(
+            self.config['follower']['calibration'].keys(),
+            key=lambda motor_name: self.config['follower']['calibration'][motor_name]['id']
+        )
         
         # ポート接続
         self.portHandler = PortHandler(self.config['follower']['port'])
