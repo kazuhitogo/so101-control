@@ -1,5 +1,5 @@
 まず Capture を使って画像に映る Anker のデバイス袋を認識してください。
-それをロボットアームで掴んでください。ただし各モータはいきなり大きく動かしてはいけません。少しずつです。ただし、モーターは同時に動かしてもいいです。
+それをロボットアームで掴んでください。
 モータを動かしたら都度 capture を使って状況を確認してください。
 各モータの説明は以下のとおりです。
 ### 1. shoulder_pan（ベース回転）
@@ -24,4 +24,34 @@
 
 ### 6. gripper（グリッパーの開閉）
 - **範囲**: 1568-3121
-- **動作**: グリッパーの開閉
+- **動作**: グリッパーの開閉。数字が大きくなればグリッパーが開く
+
+例として、物が各場所においてある場合のパラメータの例です。グリッパーは閉じたり開いたりしてください。
+
+左上 
+shoulder_pan: 1687
+shoulder_lift: 2802
+elbow_flex: 1227
+wrist_flex: 2985
+wrist_roll: 2081
+
+右上
+shoulder_pan: 2313
+shoulder_lift: 2802
+elbow_flex: 1227
+wrist_flex: 2985
+wrist_roll: 2081
+
+右下
+shoulder_pan: 2600
+shoulder_lift: 2013
+elbow_flex: 2470
+wrist_flex: 2681
+wrist_roll: 2081
+
+左下
+shoulder_pan: 1246
+shoulder_lift: 2013
+elbow_flex: 2470
+wrist_flex: 2681
+wrist_roll: 2081
