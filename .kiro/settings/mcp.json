@@ -1,0 +1,22 @@
+{
+    "mcpServers": { 
+        "WebCam": { 
+            "command": "uv", 
+            "args": [
+                "--directory", 
+                "/path/to/directory/so101-control",
+                "run",
+                "agent/capture.py"
+            ]
+        }, 
+        "so101": { 
+            "command": "uv", 
+            "args": [
+                "--directory", 
+                "/path/to/directory/so101-control",
+                "run",
+                "agent/so101.py"
+            ]
+        }
+    }
+}

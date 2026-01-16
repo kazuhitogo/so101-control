@@ -1,4 +1,3 @@
-from scservo_sdk import COMM_SUCCESS
 
 PROTOCOL_VERSION = 0
 
