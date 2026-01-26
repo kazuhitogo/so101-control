@@ -136,13 +136,3 @@ Feetech STS3215サーボモーターを使用。主な制御方法：
 
 - [SO101のフォロワーアームをLeRobotを使わずに操作してみる](https://note.com/kazuhitogo/n/nba3989cfde9f)
 - [ロボットアーム(SO101)を印刷して組み立てる](https://note.com/kazuhitogo/n/n62c458499109)
-
-## 依存関係
-
-- feetech-servo-sdk
-- mcp[cli]
-- opencv-python
-- pyserial
-- pyyaml
-- ruff
-- strands-agents
