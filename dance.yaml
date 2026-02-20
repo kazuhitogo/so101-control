@@ -1,0 +1,226 @@
+leader:
+    start:
+        shoulder_pan: 2048
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    niramekko:
+        shoulder_pan: 2448
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    kubikashige_1:
+        shoulder_pan: 2448
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2448
+        gripper: 1986
+    kubikashige_2:
+        shoulder_pan: 2448
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 1648
+        gripper: 1986
+    modoru_1:
+        shoulder_pan: 2048
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_1:
+        shoulder_pan: 2448
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_2:
+        shoulder_pan: 1648
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_3:
+        shoulder_pan: 2448
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_4:
+        shoulder_pan: 1648
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_5:
+        shoulder_pan: 2448
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_6:
+        shoulder_pan: 1648
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    modoru_2:
+        shoulder_pan: 2048
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    age_1:
+        shoulder_pan: 2048
+        shoulder_lift: 2048
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    age_2:
+        shoulder_pan: 2048
+        shoulder_lift: 2048
+        elbow_flex: 900
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    age_3:
+        shoulder_pan: 2048
+        shoulder_lift: 2048
+        elbow_flex: 900
+        wrist_flex : 2048
+        wrist_roll: 2048
+        gripper: 1986
+    ojigi:
+        shoulder_pan: 2048
+        shoulder_lift: 2048
+        elbow_flex: 2048
+        wrist_flex : 2048
+        wrist_roll: 2048
+        gripper: 1986
+follower:
+    start:
+        shoulder_pan: 2048
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    niramekko:
+        shoulder_pan: 1648
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    kubikashige_1:
+        shoulder_pan: 1648
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 1648
+        gripper: 1986
+    kubikashige_2:
+        shoulder_pan: 1648
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2448
+        gripper: 1986
+    modoru_1:
+        shoulder_pan: 2048
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_1:
+        shoulder_pan: 2448
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_2:
+        shoulder_pan: 1648
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_3:
+        shoulder_pan: 2448
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_4:
+        shoulder_pan: 1648
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_5:
+        shoulder_pan: 2448
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    synchro_twist_6:
+        shoulder_pan: 1648
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    modoru_2:
+        shoulder_pan: 2048
+        shoulder_lift: 1648
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    age_1:
+        shoulder_pan: 2048
+        shoulder_lift: 2048
+        elbow_flex: 1648
+        wrist_flex : 2648
+        wrist_roll: 2048
+        gripper: 1986
+    age_2:
+        shoulder_pan: 2048
+        shoulder_lift: 2048
+        elbow_flex: 900
+        wrist_flex : 120480
+        wrist_roll: 2048
+        gripper: 1986
+    age_3:
+        shoulder_pan: 2048
+        shoulder_lift: 2048
+        elbow_flex: 900
+        wrist_flex : 2048
+        wrist_roll: 2048
+        gripper: 1986
+    ojigi:
+        shoulder_pan: 2048
+        shoulder_lift: 2048
+        elbow_flex: 2048
+        wrist_flex : 2048
+        wrist_roll: 2048
+        gripper: 1986
