@@ -207,7 +207,7 @@ follower:
         shoulder_pan: 2048
         shoulder_lift: 2048
         elbow_flex: 900
-        wrist_flex : 120480
+        wrist_flex : 2648
         wrist_roll: 2048
         gripper: 1986
     age_3:
