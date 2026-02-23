@@ -1,7 +1,13 @@
 from mcp.server.fastmcp import FastMCP
 import yaml
+import sys
+import os
 import signal
 import atexit
+
+# パッケージのルートディレクトリをパスに追加
+if __name__ == "__main__":
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from servo_constants import (
     PROTOCOL_VERSION, BAUDRATE,
@@ -112,23 +118,34 @@ so101 = So101()
 mcp = FastMCP("SO101")
 
 @mcp.tool()
-def set_motors_position(motor_position_dict):
+def set_motors_positions(motor_position_dict_list):
     """
-    ロボットアームのすべてのモーターを同時に指定位置に移動させる
+    ロボットアームのすべてのモーターを同時に指定位置に順番に移動
     
     Args:
-        motor_position_dict (dict): モーター名をキー、目標位置を値とする辞書。
-        動かさないモーターは省略可。値は 0-4095 までだがモーターごとに可動範囲の制約があり 0-4095 でも設定できない場合がある。
+        motor_position_dict_list : モーター名をキー、目標位置を値とする辞書のリスト。
+        動かさないモーターは省略可で前回の位置と変わらない。
+        値は 0-4095 までだがモーターごとに可動範囲の制約があり 0-4095 でも設定できない場合がある。
         設定できない値の場合はエラーメッセージで設定できる値の範囲を返す。
-        以下はすべてのモーターを動かす例: 
-        {
-            "shoulder_pan": 2048,
-            "shoulder_lift": 2048,
-            "elbow_flex": 2048,
-            "wrist_flex": 2048,
-            "wrist_roll": 2048,
-            "gripper": 2048
-        }
+        以下はすべてのモーターを 2 回動かす例: 
+        [
+            {
+                "shoulder_pan": 2048,
+                "shoulder_lift": 2048,
+                "elbow_flex": 2048,
+                "wrist_flex": 2048,
+                "wrist_roll": 2048,
+                "gripper": 2048
+            },
+            {
+                "shoulder_pan": 1536,
+                "shoulder_lift": 1536,
+                "elbow_flex": 1536,
+                "wrist_flex": 1536,
+                "wrist_roll": 1536,
+                "gripper": 1536
+            },
+        ]
     
     Returns:
         dict or list: 成功時は各モーターの現在位置を含む辞書、
@@ -136,20 +153,21 @@ def set_motors_position(motor_position_dict):
     """
     errors = []
     enable = True
-    for motor in motor_position_dict.keys():
-        enable *= so101.motors[motor].validate_goal_position(motor_position_dict[motor])
-        if enable:
-            pass
-        else:
-            errors.append(f"{motor} は {so101.motors[motor].range_min} から {so101.motors[motor].range_max} の値以外許されません")
+    for motor_position_dict in motor_position_dict_list:
+        for motor in motor_position_dict.keys():
+            enable *= so101.motors[motor].validate_goal_position(motor_position_dict[motor])
+            if enable:
+                pass
+            else:
+                errors.append(f"{motor} は {so101.motors[motor].range_min} から {so101.motors[motor].range_max} の値以外許されません")
     
     if enable:
-        for motor in motor_position_dict.keys():
-            so101.motors[motor].set_goal_position(motor_position_dict[motor])
-        sleep(1)
-        result = {}
-        for motor in motor_position_dict.keys():
-            result[motor] = so101.motors[motor].get_current_position()
+        for motor_position_dict in motor_position_dict_list:
+            for motor in motor_position_dict.keys():
+                so101.motors[motor].set_goal_position(motor_position_dict[motor])
+            result = {}
+            sleep(0.5)    
+        
         return result
 
     else:
